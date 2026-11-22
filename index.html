@@ -63,6 +63,8 @@ header .meta b { color: var(--gold); }
 .sec { margin-top: 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .sec h3 { font-size: 13px; color: var(--cyan); letter-spacing: 2px; margin-bottom: 10px; font-weight: 600; }
 .sec h3 .zh { color: var(--text); margin-right: 6px; font-size: 14px; }
+.srclbl { color: var(--muted); font-size: 12px; margin-left: 8px; }
+.augnote { color: var(--cyan); font-size: 12px; margin-left: 6px; }
 .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 5px; background: #0f1526; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; font-size: 13px; color: var(--text); }
 .chip img { width: 22px; height: 22px; border-radius: 4px; }
@@ -185,7 +187,7 @@ function openDetail(slug) {
   if (!h) return;
   const isStar = starred.includes(slug);
   const augList = (list, cls) => (list || []).map((a, i) => `
-    <div class="augrow"><span class="no">${i + 1}</span><img loading="lazy" src="assets/augments/${a.id}.png" onerror="this.style.display='none'"><span class="nm">${esc(a.name)}${a.star ? ' <span class="star">★</span>' : ''}</span></div>`).join('');
+    <div class="augrow"><span class="no">${i + 1}</span><img loading="lazy" src="assets/augments/${a.id}.png" onerror="this.style.display='none'"><span class="nm">${esc(a.name)}${a.star ? ' <span class="star">★</span>' : ''}${a.note ? ' <span class="augnote">' + esc(a.note) + '</span>' : ''}</span></div>`).join('');
   const perf = (h.telemetry?.augmentPerf || []).slice(0, 5).map((a, i) =>
     `<tr><td>${i + 1}</td><td>${esc(a.name)}</td><td><span class="badge" style="background:#3f8cff;padding:0 6px;border-radius:5px;font-size:11px">${esc(a.tier)}</span></td><td class="good">${a.win}%</td><td style="color:var(--muted)">${a.pick}%</td></tr>`).join('');
   const optimal = (h.telemetry?.optimal || []).map(o =>
@@ -203,10 +205,10 @@ function openDetail(slug) {
       <span>选取率 <b>${h.pick}</b></span>
       <span>加点 <b>${esc(h.skillOrder)}</b></span>
     </div>
-    ${h.telemetry?.coreThree ? `<div class="sec"><h3><span class="zh">核心三件套</span>CORE</h3><div class="flow">${h.telemetry.coreThree.split(' → ').map(x => `<span class="chip">${esc(x)}</span>`).join('<span class="arrow">▸</span>')}</div>
+    ${h.telemetry?.coreThree?.length ? `<div class="sec"><h3><span class="zh">高胜率三件套</span>CORE</h3><span class="srclbl">aramgg 遥测口径${coreWin ? ' · 胜率 ' + coreWin.win + '%（收益 ' + (coreWin.delta > 0 ? '+' : '') + coreWin.delta + '%）' : ''}</span><div class="flow" style="margin-top:8px">${h.telemetry.coreThree.map(c => `<span class="chip">${c.id ? `<img loading="lazy" src="assets/items/${c.id}.png" onerror="this.style.display='none'">` : ''}${esc(c.name)}</span>`).join('<span class="arrow">▸</span>')}</div>
       <div class="kv" style="margin-top:10px"><span class="k">起手装</span><span>${(h.telemetry.starter || []).map(esc).join(' + ') || '-'}</span>
       <span class="k">召唤师技能</span><span>${esc((h.telemetry.optimal.find(o => o.label.includes('召唤师')) || {}).choice || '-')}</span></div></div>` : ''}
-    <div class="sec"><h3><span class="zh">出装顺序</span>BUILD</h3>
+    <div class="sec"><h3><span class="zh">出装顺序</span>BUILD</h3><span class="srclbl">aramkit 主源 · 常规六神</span>
       <div class="flow">${h.build.map((b, i) => `<span class="chip"><img loading="lazy" src="assets/items/${b.id}.png" onerror="this.style.display='none'">${esc(b.name)}</span>${i < h.build.length - 1 ? '<span class="arrow">▸</span>' : ''}`).join('')}</div>
       ${h.alt.length ? `<div style="margin-top:8px;color:var(--muted);font-size:12px">备选：${h.alt.map(b => esc(b.name)).join('、')}</div>` : ''}
     </div>
