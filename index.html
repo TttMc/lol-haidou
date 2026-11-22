@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>海斗速查</title>
+<style>
+:root {
+  --bg: #0a0e1a; --panel: #12182b; --panel2: #1a2238; --line: #26304a;
+  --text: #e8ecf4; --muted: #9aa7c0; --gold: #f0c674; --cyan: #0ac8b9;
+  --s: #ff7a45; --a: #ffb02e; --b: #4da3ff; --c: #9aa7c0; --d: #7f8ea3;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: "Microsoft YaHei", system-ui, sans-serif; font-size: 14px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 12px 14px 40px; }
+header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 20px; color: var(--cyan); letter-spacing: 1px; }
+header .meta { color: var(--muted); font-size: 12px; }
+header .meta b { color: var(--gold); }
+#search { margin-left: auto; background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 12px; width: 200px; font-size: 13px; outline: none; }
+#search:focus { border-color: var(--cyan); }
+.starbar { padding: 8px 0 2px; color: var(--muted); font-size: 12px; }
+.starbar .chip { cursor: pointer; }
+.rolebar { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 0 0; }
+.rolebar .rtag { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); border-radius: 14px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
+.rolebar .rtag.on { color: #fff; background: var(--cyan); border-color: var(--cyan); font-weight: 700; }
+.changesbox { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.changesbox .ch { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 4px 0; cursor: pointer; }
+.changesbox .ch:hover .nm { color: var(--cyan); }
+.changesbox .ch .nm { font-weight: 700; min-width: 70px; }
+.changesbox .d-up { color: var(--cyan); } .changesbox .d-dn { color: #ff8a8a; }
+.changesbox .mut { color: var(--muted); font-size: 12px; }
+.changesbox summary { cursor: pointer; color: var(--gold); font-size: 13px; font-weight: 700; }
+.changesbox summary .sub { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
+.tierhead { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; }
+.tierhead .t { font-size: 16px; font-weight: 800; color: var(--text); }
+.tierhead .d { color: var(--muted); font-size: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.hcard { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--dc, var(--c)); border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: transform .1s, border-color .1s; }
+.hcard:hover { transform: translateY(-2px); border-color: var(--cyan); }
+.hcard .row1 { display: flex; align-items: center; gap: 8px; }
+.hcard img { width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--line); background: #000; }
+.hcard .nm { font-weight: 700; font-size: 14px; }
+.hcard .rk { margin-left: auto; color: var(--muted); font-size: 11px; }
+.hcard .row2 { display: flex; align-items: center; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.hcard .win { font-weight: 800; font-size: 14px; }
+.hcard .win.up { color: var(--cyan); }
+.hcard .pk { margin-left: auto; }
+.hcard .aug { margin-top: 4px; font-size: 12px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 弹层 */
+#overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: none; z-index: 50; }
+#overlay.open { display: block; }
+#detail { position: fixed; top: 0; right: -560px; width: 540px; max-width: 96vw; height: 100vh; background: var(--panel); border-left: 1px solid var(--line); z-index: 60; transition: right .18s ease-out; overflow-y: auto; padding: 16px 18px 40px; }
+#detail.open { right: 0; }
+#detail .close { position: absolute; top: 12px; right: 14px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; }
+.dhead { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; padding-right: 36px; }
+.dhead img { width: 56px; height: 56px; border-radius: 10px; border: 1px solid var(--line); }
+.dhead .t { font-size: 20px; font-weight: 800; }
+.dhead .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.statline { display: flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; font-size: 13px; color: var(--muted); }
+.statline b { color: var(--text); font-size: 15px; }
+.statline .badge { display: inline-block; padding: 1px 8px; border-radius: 6px; font-weight: 800; color: #fff; }
+.sec { margin-top: 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.sec h3 { font-size: 13px; color: var(--cyan); letter-spacing: 2px; margin-bottom: 10px; font-weight: 600; }
+.sec h3 .zh { color: var(--text); margin-right: 6px; font-size: 14px; }
+.flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; background: #0f1526; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; font-size: 13px; color: var(--text); }
+.chip img { width: 22px; height: 22px; border-radius: 4px; }
+.arrow { color: var(--muted); margin: 0 2px; }
+.augrow { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; margin-bottom: 4px; background: #0f1526; border: 1px solid var(--line); }
+.augrow img { width: 26px; height: 26px; border-radius: 6px; }
+.augrow .no { color: var(--muted); font-size: 11px; width: 20px; }
+.augrow .nm { flex: 1; }
+.augrow .star { color: var(--gold); }
+.augrow .st { font-size: 12px; color: var(--muted); }
+.aughead { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-size: 13px; }
+.aughead .badge { padding: 1px 8px; border-radius: 6px; font-weight: 700; color: #fff; font-size: 12px; }
+.badge.silver { background: #8a97ad; } .badge.gold { background: #c8a24a; } .badge.prismatic { background: linear-gradient(90deg,#b04fe0,#3f8cff); }
+.badge.S { background: var(--s); } .badge.A { background: var(--a); } .badge.B { background: var(--b); } .badge.C { background: #5b7ba0; } .badge.D { background: var(--d); }
+.warnbox { background: rgba(255,90,90,.08); border: 1px solid rgba(255,90,90,.35); border-radius: 10px; padding: 10px 12px; margin-top: 12px; font-size: 13px; }
+.warnbox b { color: #ff8a8a; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+.kv .k { color: var(--muted); }
+.optimal td { padding: 4px 10px 4px 0; font-size: 13px; }
+.optimal .lbl { color: var(--muted); }
+.optimal .good { color: var(--cyan); font-weight: 700; }
+.foot { margin-top: 24px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.foot a { color: var(--cyan); text-decoration: none; }
+.empty { color: var(--muted); text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>◈ 海斗速查</h1>
+    <span class="meta">版本 <b id="ver">-</b> · 数据日期 <b id="sync">-</b> · 更新于 <b id="upd">-</b></span>
+    <input id="search" type="text" placeholder="搜索英雄…" autocomplete="off">
+  </header>
+  <div class="starbar">常用：<span id="starred"></span></div>
+  <div class="rolebar" id="rolebar"></div>
+  <div id="changes"></div>
+  <div id="tiers"></div>
+  <div id="nomatch" class="empty" style="display:none">没有匹配的英雄</div>
+  <div class="foot">数据来源：<a href="https://aramkit.cdqyfdbymn.me" target="_blank">aramkit 海克斯小秘书</a>（国服遥测，每日凌晨同步）。本页面为本地个人速查工具，与 Riot Games / 腾讯无关联。游戏素材版权归 Riot Games 所有。</div>
+</div>
+
+<div id="overlay"></div>
+<aside id="detail"></aside>
+
+<script src="data/data.js"></script>
+<script>
+const D = window.HAIDOU_DATA;
+const STAR_KEY = 'haidou.starred';
+const starred = JSON.parse(localStorage.getItem(STAR_KEY) || '["twistedfate","lucian","missfortune","vayne","corki"]');
+
+const tierColors = { S: 'var(--s)', A: 'var(--a)', B: 'var(--b)', C: 'var(--c)', D: 'var(--d)' };
+const tierDesc = { S: '版本之子，上分首选', A: '强势英雄，稳定 carry', B: '中规中矩，吃熟练度', C: '偏弱，需要阵容配合', D: '版本逆风，谨慎选取' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// 顶部元信息
+$('ver').textContent = D.version;
+$('sync').textContent = D.syncedAt;
+$('upd').textContent = D.updatedAt;
+
+// 常用栏
+function renderStarred() {
+  const el = $('starred');
+  el.innerHTML = '';
+  for (const slug of starred) {
+    const h = D.heroes[slug]; if (!h) continue;
+    const s = document.createElement('span');
+    s.className = 'chip'; s.style.cursor = 'pointer';
+    s.innerHTML = `<img src="${asset(h.square)}" style="width:20px;height:20px;border-radius:4px;vertical-align:-5px"> ${esc(h.name)}`;
+    s.onclick = () => openDetail(slug);
+    el.appendChild(s);
+  }
+}
+
+// 梯队网格
+function renderTiers(filter) {
+  const root = $('tiers');
+  root.innerHTML = '';
+  let total = 0;
+  const q = (filter || '').trim().toLowerCase();
+  for (const [tier, rows] of Object.entries(D.tiers)) {
+    const hits = rows.filter(r => {
+      if (q) {
+        const ok = r.name.toLowerCase().includes(q) || (D.heroes[r.slug]?.alias || '').toLowerCase().includes(q) || r.slug.toLowerCase().includes(q);
+        if (!ok) return false;
+      }
+      if (roleFilter !== '全部' && !matchRole(D.heroes[r.slug], roleFilter)) return false;
+      return true;
+    });
+    total += hits.length;
+    const head = document.createElement('div');
+    head.className = 'tierhead';
+    head.innerHTML = `<span class="badge ${tier}" style="padding:2px 10px">${tier}</span><span class="d">${tierDesc[tier]} · ${hits.length} 名</span>`;
+    root.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    for (const r of hits) {
+      const h = D.heroes[r.slug] || {};
+      const card = document.createElement('div');
+      card.className = 'hcard';
+      card.style.setProperty('--dc', tierColors[tier]);
+      card.innerHTML = `
+        <div class="row1"><img loading="lazy" src="${asset(h.square)}" onerror="this.style.visibility='hidden'"><span class="nm">${esc(r.name)}</span><span class="rk">#${r.rank}</span></div>
+        <div class="row2"><span class="win ${r.win >= 52 ? 'up' : ''}">${r.win}%</span><span class="pk">选取 ${r.pick}</span></div>
+        <div class="aug" title="首选棱彩海克斯">${esc(r.prismatic)}</div>`;
+      card.onclick = () => openDetail(r.slug);
+      grid.appendChild(card);
+    }
+    root.appendChild(grid);
+  }
+  $('nomatch').style.display = total ? 'none' : 'block';
+}
+
+$('search').addEventListener('input', e => renderTiers(e.target.value));
+
+// 详情弹层
+const overlay = $('overlay'), detail = $('detail');
+function openDetail(slug) {
+  const h = D.heroes[slug];
+  if (!h) return;
+  const isStar = starred.includes(slug);
+  const augList = (list, cls) => (list || []).map((a, i) => `
+    <div class="augrow"><span class="no">${i + 1}</span><img loading="lazy" src="assets/augments/${a.id}.png" onerror="this.style.display='none'"><span class="nm">${esc(a.name)}${a.star ? ' <span class="star">★</span>' : ''}</span></div>`).join('');
+  const perf = (h.telemetry?.augmentPerf || []).slice(0, 5).map((a, i) =>
+    `<tr><td>${i + 1}</td><td>${esc(a.name)}</td><td><span class="badge" style="background:#3f8cff;padding:0 6px;border-radius:5px;font-size:11px">${esc(a.tier)}</span></td><td class="good">${a.win}%</td><td style="color:var(--muted)">${a.pick}%</td></tr>`).join('');
+  const optimal = (h.telemetry?.optimal || []).map(o =>
+    `<tr><td class="lbl">${esc(o.label)}</td><td class="good">${esc(o.choice)}</td><td>${o.win}% <span style="color:var(--muted)">(${o.delta > 0 ? '+' : ''}${o.delta}%)</span></td></tr>`).join('');
+  detail.innerHTML = `
+    <button class="close" onclick="closeDetail()">×</button>
+    <div class="dhead"><img src="${asset(h.square)}" onerror="this.style.display='none'"><div>
+      <div class="t">${esc(h.name)} <span style="font-size:13px;color:var(--muted)">${esc(h.alias)}</span>
+        <button id="starbtn" style="margin-left:8px;background:var(--panel2);border:1px solid var(--line);color:${isStar ? 'var(--gold)' : 'var(--muted)'};border-radius:8px;padding:2px 10px;cursor:pointer;font-size:12px">${isStar ? '★ 已收藏' : '☆ 收藏'}</button></div>
+      <div class="sub">${esc(h.role || '')} · 排名 #${h.rank} · 数据源 aramkit</div>
+    </div></div>
+    <div class="statline">
+      <span>层级 <span class="badge ${h.tier}" style="padding:1px 9px">${h.tier}</span></span>
+      <span>胜率 <b>${h.win}%</b></span>
+      <span>选取率 <b>${h.pick}</b></span>
+      <span>加点 <b>${esc(h.skillOrder)}</b></span>
+    </div>
+    ${h.telemetry?.coreThree ? `<div class="sec"><h3><span class="zh">核心三件套</span>CORE</h3><div class="flow">${h.telemetry.coreThree.split(' → ').map(x => `<span class="chip">${esc(x)}</span>`).join('<span class="arrow">▸</span>')}</div>
+      <div class="kv" style="margin-top:10px"><span class="k">起手装</span><span>${(h.telemetry.starter || []).map(esc).join(' + ') || '-'}</span>
+      <span class="k">召唤师技能</span><span>${esc((h.telemetry.optimal.find(o => o.label.includes('召唤师')) || {}).choice || '-')}</span></div></div>` : ''}
+    <div class="sec"><h3><span class="zh">出装顺序</span>BUILD</h3>
+      <div class="flow">${h.build.map((b, i) => `<span class="chip"><img loading="lazy" src="assets/items/${b.id}.png" onerror="this.style.display='none'">${esc(b.name)}</span>${i < h.build.length - 1 ? '<span class="arrow">▸</span>' : ''}`).join('')}</div>
+      ${h.alt.length ? `<div style="margin-top:8px;color:var(--muted);font-size:12px">备选：${h.alt.map(b => esc(b.name)).join('、')}</div>` : ''}
+    </div>
+    <div class="sec"><h3><span class="zh">海克斯优先级</span>HEXTECH</h3>
+      ${['prismatic', 'gold', 'silver'].map(k => {
+        const zh = { prismatic: '棱彩', gold: '金色', silver: '银色' }[k];
+        const list = h.augments[k] || [];
+        if (!list.length) return '';
+        return `<div class="aughead"><span class="badge ${k}">${zh}</span><span style="color:var(--muted);font-size:12px">${list[0]?.name ? '优先取靠前' : ''}</span></div><div>${augList(list)}</div>`;
+      }).join('')}
+      ${perf ? `<div class="aughead"><span class="badge" style="background:#3f8cff">实测</span><span style="color:var(--muted);font-size:12px">海克斯实测表现 TOP5（胜率 / 选取率）</span></div>
+      <table class="optimal">${perf}</table>` : ''}
+    </div>
+    ${h.traps?.length ? `<div class="warnbox"><b>⚠ 陷阱符文</b>：${h.traps.map(t => esc(t.a)).join('；')} ${esc(h.traps[0]?.a === '溢流' ? '（详情见原站说明）' : '')}</div>` : ''}
+  `;
+  $('starbtn').onclick = () => toggleStar(slug);
+  history.replaceState(null, '', '#hero=' + slug);
+  overlay.classList.add('open');
+  detail.classList.add('open');
+  detail.scrollTop = 0;
+}
+function closeDetail() { overlay.classList.remove('open'); detail.classList.remove('open'); if (location.hash) history.replaceState(null, '', location.pathname); }
+overlay.onclick = closeDetail;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+function toggleStar(slug) {
+  const i = starred.indexOf(slug);
+  if (i > -1) starred.splice(i, 1); else starred.push(slug);
+  localStorage.setItem(STAR_KEY, JSON.stringify(starred));
+  renderStarred();
+  openDetail(slug);
+}
+
+// 图片基址：面板以 file:// 打开, /assets/... 必须转相对路径
+const IMG_BASE = '';
+const asset = p => p ? String(p).replace(/^\//, '') : p;
+
+// 定位筛选
+const ROLES = ['全部', '射手', '法师', '刺客', '战士', '坦克', '辅助'];
+let roleFilter = '全部';
+function matchRole(h, role) {
+  if (!h || !h.role) return false;
+  return h.role.split('/').map(s => s.trim()).includes(role);
+}
+function renderRolebar() {
+  const bar = $('rolebar');
+  bar.innerHTML = '';
+  for (const r of ROLES) {
+    const t = document.createElement('span');
+    t.className = 'rtag' + (roleFilter === r ? ' on' : '');
+    t.textContent = r;
+    t.onclick = () => { roleFilter = r; renderRolebar(); renderTiers($('search').value); };
+    bar.appendChild(t);
+  }
+}
+
+// 每日排名变化
+function renderChanges() {
+  const box = $('changes');
+  box.innerHTML = '';
+  const list = (D.changes && D.changes.list) || [];
+  if (!list.length) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const tierChange = list.filter(c => c.tier !== c.tierOld);
+  const winMove = list.filter(c => c.tier === c.tierOld && Math.abs(c.winDelta) >= 0.2);
+  const shown = [...tierChange, ...winMove].slice(0, 12);
+  if (!shown.length) { box.style.display = 'none'; return; }
+  const det = document.createElement('details');
+  const rows = shown.map(c => {
+    const parts = [];
+    if (c.tier !== c.tierOld) parts.push(`<span class="${c.tier === 'S' || c.tier === 'A' ? 'd-up' : 'd-dn'}">梯队 ${c.tierOld || '?'}→${c.tier}</span>`);
+    const wd = c.winDelta > 0 ? `+${c.winDelta}%` : `${c.winDelta}%`;
+    parts.push(`<span class="${c.winDelta > 0 ? 'd-up' : 'd-dn'}">胜率 ${wd}</span>`);
+    if (c.rankOld) parts.push(`<span class="mut">排名 #${c.rankOld}→#${c.rank}</span>`);
+    return `<div class="ch" onclick="openDetail('${c.slug}')"><span class="nm">${esc(c.name)}</span><span>${parts.join(' · ')}</span></div>`;
+  }).join('');
+  det.innerHTML = `<summary>每日变化 <span class="sub">${D.changes.date} · ${shown.length} 项显著变动</span></summary>${rows}`;
+  box.appendChild(det);
+}
+
+renderStarred();
+renderRolebar();
+renderChanges();
+renderTiers('');
+
+// hash 深链: #hero=slug 直接打开该英雄详情(刷新/分享后保持)
+if (location.hash.startsWith('#hero=')) {
+  const slug = decodeURIComponent(location.hash.slice(6));
+  if (D.heroes[slug]) openDetail(slug);
+}
+window.addEventListener('hashchange', () => {
+  if (location.hash.startsWith('#hero=')) {
+    const slug = decodeURIComponent(location.hash.slice(6));
+    if (D.heroes[slug]) openDetail(slug);
+  } else closeDetail();
+});
+</script>
+</body>
+</html>
