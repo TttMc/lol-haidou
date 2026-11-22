@@ -185,6 +185,7 @@ const overlay = $('overlay'), detail = $('detail');
 function openDetail(slug) {
   const h = D.heroes[slug];
   if (!h) return;
+  const coreWin = (h.telemetry?.optimal || []).find(o => o.label.indexOf('核心出装') >= 0);
   const isStar = starred.includes(slug);
   const augList = (list, cls) => (list || []).map((a, i) => `
     <div class="augrow"><span class="no">${i + 1}</span><img loading="lazy" src="assets/augments/${a.id}.png" onerror="this.style.display='none'"><span class="nm">${esc(a.name)}${a.star ? ' <span class="star">★</span>' : ''}${a.note ? ' <span class="augnote">' + esc(a.note) + '</span>' : ''}</span></div>`).join('');
